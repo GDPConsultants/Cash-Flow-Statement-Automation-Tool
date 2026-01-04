@@ -1,6 +1,8 @@
 streamlit
 pandas
+numpy
+pdfplumber
 openpyxl
-fpdf2
+reportlab
+python-dotenv
 Pillow
-requests
