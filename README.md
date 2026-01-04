@@ -1,57 +1,114 @@
-# 🏦 Bank Reconciliation AI
+Financial AI Automation Suite (IFRS & CPA Standards)
+A professional, high-security financial automation suite developed by GDP Consultants. This suite features two primary tools: the Bank Reconciliation AI and the IFRS Cash Flow Statement Generator.
 
-**Bank Reconciliation AI** is a professional-grade automation tool designed to streamline financial accounting. Using advanced AI (Nanonets), it extracts data from PDF bank statements and matches them against your internal bank book records in seconds.
+Designed for WordPress embedding, these tools provide a monetized, audit-ready experience with dynamic pricing and secure image-based previews.
 
----
+🌟 Key Features
+1. Bank Reconciliation AI (CPA Standard)
 
-## ✨ Key Features
-* **Multi-Format Support:** Upload Bank Statements in **PDF, XLSX, or CSV**.
-* **AI Extraction:** Powered by **Nanonets OCR** to accurately read scanned or digital PDF statements.
-* **Smart Matching:** Uses **Exact** and **Fuzzy Logic** to pair transactions even with minor description typos.
-* **One-Trial System:** Allow users to try the tool once before requiring a premium unlock.
-* **Secure Paywall:** Integrated **PayPal** payment gateway for global access.
-* **Professional Reports:** Export finalized reconciliations as branded **PDF Reports**.
+4-Step Methodology: Follows the official CPA Ireland step-by-step approach.
++1
 
----
 
-## 🛠️ Setup Instructions
+Carryforward Logic: Automatically tracks unpresented cheques and unrealised deposits from the previous month.
++2
 
-### 1. Prerequisites
-* A **Nanonets** account ([app.nanonets.com](https://app.nanonets.com)) to get your API Key and Model ID.
-* A **PayPal Developer** account to get your Client ID for payments.
 
-### 2. File Structure
-Ensure your GitHub repository has the following files:
-* `app.py`: The main application code.
-* `requirements.txt`: List of Python dependencies.
-* `logo-removebg-preview.png`: Your brand logo.
-* `.streamlit/config.toml`: Custom UI settings to hide developer menus.
+Adjusted Cash Book: Identifies bank charges, direct debits, and interest missing from internal records before final reconciliation.
++1
 
-### 3. Deployment
-1. Connect your **Private GitHub Repository** to [Streamlit Community Cloud](https://share.streamlit.io/).
-2. Add your **Secret Keys** (Nanonets API Key) in the Streamlit "Secrets" settings rather than hardcoding them for maximum security.
-3. Deploy!
 
----
+Error Detection: Highlights discrepancies between bank statements and cash books with reference details and dates.
++1
 
-## 🔑 Administrative Details
-* **Current Access Key:** `ReconPro2026` 
-* **Trial Limit:** 1 Attempt (Session-based)
-* **Payment Amount:** $10.00 USD (Adjustable in `app.py`)
+2. IFRS Cash Flow Statement Generator
+Indirect Method: Automatically prepares Cash Flow Statements from Balance Sheets and P&L data according to IFRS standards.
 
----
+Automated Adjustments: Calculates deltas for non-cash items like Depreciation and Amortization.
 
-## 📖 User Instructions
-1. **Upload Files:** Drag and drop your Bank Statement (left) and Bank Book (right).
-2. **Processing:** Wait for the AI to parse the PDF data.
-3. **Review:** Check the "Results Preview" to see matched and missing items.
-4. **Export:** Click "Download Official PDF Report" to save your results.
-5. **Unlock:** If you have used your trial, follow the PayPal prompts to receive your Access Key.
+Classification: Properly categorizes Operating, Investing, and Financing activities.
 
----
+3. Commercial & Security Features
+Monetization: Integrated PayPal API for instant payments (USD 5 minimum).
 
-## 🛡️ Security & Privacy
-This repository is configured to hide "View Source" and GitHub links from end-users. For full protection, always keep this repository **Private** on GitHub.
+Dynamic Pricing: For BRS, fees are calculated based on transaction volume ($5 for <100 entries, +$1 per additional 100).
 
----
-© 2026 Bank Reconciliation AI. All rights reserved.
+Secure Preview: Generates high-resolution, watermarked image previews based on professional templates to prevent data copying before payment.
+
+Branding: Automatically pulls the Business Name and Bank details from uploaded files to brand the reports.
+
+Code Protection: Custom UI configuration hides developer menus and source code access for end-users.
+
+🚀 Installation & Setup
+Prerequisites
+Python 3.9+
+
+A private GitHub Repository
+
+Streamlit Community Cloud account
+
+PayPal Developer Account (Client ID & Secret)
+
+1. Repository Structure
+Ensure your GitHub folder contains the following:
+
+Plaintext
+
+├── app.py                      # Main Python application
+├── logo-removebg-preview.png   # Your corporate logo
+├── requirements.txt            # Dependency list
+└── .streamlit/
+    └── config.toml             # Security & Theme settings
+2. Dependencies (requirements.txt)
+Plaintext
+
+streamlit
+pandas
+openpyxl
+fpdf2
+Pillow
+requests
+3. Security Configuration (.streamlit/config.toml)
+To hide the "View Source" menu and developer tools from users, include the following:
+
+Ini, TOML
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false
+🛠 Deployment to WordPress
+To add this tool to your WordPress homepage, use a Custom HTML Block with an IFrame:
+
+HTML
+
+<iframe
+    src="https://your-app-name.streamlit.app/?embed=true"
+    frameborder="0"
+    width="100%"
+    height="1200px"
+    allow="payment"
+></iframe>
+📊 Accounting Methodology
+Our tool follows the rigorous CPA Ireland Step-by-Step Guide:
+
+
+Step 1: Reconcile Opening Balances.
+
+
+Step 2: Eliminate matching amounts and details.
+
+
+Step 3: Reconcile the Bank Account (Internal Book adjustments).
+
+
+Step 4: Reconcile the Bank Statement (Unpresented items & Lodgements in transit).
++1
+
+📞 Support & Contact
+GDP Consultants
+
+Email: info@taxcalculator.lk
+
+Website: www.taxcalculator.lk
