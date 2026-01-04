@@ -1,120 +1,183 @@
 import streamlit as st
 import pandas as pd
-from fpdf import FPDF
-from PIL import Image, ImageDraw, ImageFont
-import streamlit.components.v1 as components
+import numpy as np
+import pdfplumber
 import io
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from PIL import Image, ImageDraw, ImageFilter
 
-# --- 1. CONFIGURATION & BRANDING ---
-st.set_page_config(page_title="IFRS Cash Flow AI", layout="wide", page_icon="📈")
+# --- 1. CONFIGURATION & SECURITY ---
+st.set_page_config(page_title="IFRS Cash Flow AI", layout="wide")
 
-# Security: Hide developer menus to protect code
+# Hide Streamlit UI to protect code
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     .stDeployButton {display:none;}
-    .main {background-color: #f8fafc;}
+    .main {background-color: #F8FAFC;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. IFRS CASH FLOW LOGIC ---
-def generate_preview_image(data):
-    """Generates a professional IFRS formatted image preview with watermark"""
-    img = Image.new('RGB', (1000, 1400), color=(255, 255, 255))
-    d = ImageDraw.Draw(img)
-    
-    # Header - Corporate Blue
-    d.rectangle([0, 0, 1000, 120], fill="#1E3A8A")
-    d.text((50, 40), f"{data['biz_name']} - Statement of Cash Flows (IFRS)", fill="white")
-    
-    y = 150
-    d.text((50, y), f"Period Ended: {data['period']}", fill="black")
-    
-    # Section: Operating Activities
-    y += 80
-    d.rectangle([0, y, 1000, y+40], fill="#E5E7EB")
-    d.text((50, y+10), "Cash Flows from Operating Activities (Indirect Method)", fill="black")
-    y += 60
-    d.text((70, y), "Net Profit Before Tax", fill="black"); d.text((850, y), f"{data['net_profit']:,.2f}", fill="black")
-    y += 40
-    d.text((70, y), "Adjustments for: Depreciation & Amortization", fill="gray"); d.text((850, y), f"{data['depreciation']:,.2f}", fill="black")
-    
-    # Section: Investing Activities
-    y += 100
-    d.rectangle([0, y, 1000, y+40], fill="#E5E7EB")
-    d.text((50, y+10), "Cash Flows from Investing Activities", fill="black")
-    y += 60
-    d.text((70, y), "Purchase of Property, Plant & Equipment", fill="gray"); d.text((850, y), f"({data['ppe_purchase']:,.2f})", fill="black")
-    
-    # Section: Financing Activities
-    y += 100
-    d.rectangle([0, y, 1000, y+40], fill="#E5E7EB")
-    d.text((50, y+10), "Cash Flows from Financing Activities", fill="black")
-    
-    # Total Cash Movement
-    y += 150
-    d.rectangle([0, y, 1000, y+50], fill="#1E3A8A")
-    d.text((50, y+15), "Net Increase/Decrease in Cash", fill="white")
-    d.text((850, y+15), f"{data['net_increase']:,.2f}", fill="white")
+# --- 2. CORE FINANCIAL FUNCTIONS ---
 
-    # Watermark
-    d.text((250, 700), "PREVIEW ONLY - PAY USD 5 TO DOWNLOAD", fill=(200, 200, 200))
-    return img
+def parse_excel(file):
+    try:
+        df = pd.read_excel(file)
+        # In a production AI, this would map dynamic headers to standard tags
+        return df
+    except Exception as e:
+        st.error(f"Excel Parsing Error: {e}")
+        return None
 
-# --- 3. UI WORKFLOW ---
+def parse_pdf(file):
+    try:
+        with pdfplumber.open(file) as pdf:
+            text = ""
+            for page in pdf.pages:
+                text += page.extract_text()
+        # Simulated extraction logic
+        return text
+    except Exception as e:
+        st.error(f"PDF Parsing Error: {e}")
+        return None
+
+def prepare_cash_flow(data):
+    """
+    IFRS (LKAS 7) Indirect Method Classification
+    1. Operating Activities (Profit, Depreciation, Working Capital)
+    2. Investing Activities (PPE, Investments)
+    3. Financing Activities (Loans, Dividends)
+    """
+    # Placeholder Logic: In real use, this calculates deltas from Opening/Closing Balance Sheets
+    cf_data = {
+        "Description": [
+            "Cash flows from operating activities",
+            "  Profit before tax", "  Adjustments for: Depreciation", "  Working Capital Changes",
+            "Net cash from operating activities",
+            "",
+            "Cash flows from investing activities",
+            "  Purchase of PPE", "  Proceeds from sale of investments",
+            "Net cash used in investing activities",
+            "",
+            "Cash flows from financing activities",
+            "  Proceeds from loans", "  Dividends paid",
+            "Net cash from financing activities",
+            "",
+            "Net increase in cash and cash equivalents"
+        ],
+        "Amount (USD)": [
+            None, 50000.00, 12000.00, -5000.00, 57000.00, 
+            None, None, -25000.00, 10000.00, -15000.00, 
+            None, None, 20000.00, -10000.00, 10000.00,
+            None, 52000.00
+        ]
+    }
+    return pd.DataFrame(cf_data)
+
+def generate_pdf(df, biz_name, period):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    styles = getSampleStyleSheet()
+    elements = []
+
+    # Professional IFRS Header
+    elements.append(Paragraph(biz_name.upper(), styles['Heading1']))
+    elements.append(Paragraph(f"Statement of Cash Flows - {period}", styles['Heading2']))
+    elements.append(Paragraph("Prepared under IFRS (Indirect Method)", styles['Italic']))
+    elements.append(Spacer(1, 20))
+
+    # Table Formatting
+    data = [df.columns.to_list()] + df.values.tolist()
+    # Replace None with empty strings for PDF
+    data = [[str(item) if item is not None else "" for item in row] for row in data]
+    
+    t = Table(data, colWidths=[350, 100])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.whitesmoke),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('LINEBELOW', (0, 0), (-1, 0), 2, colors.black),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+    ]))
+    elements.append(t)
+    doc.build(elements)
+    return buffer.getvalue()
+
+# --- 3. UI & PAYMENT WORKFLOW ---
+
+st.title("IFRS Cash Flow Statement AI")
+st.write("Professional Automation for Accountants and Auditors")
+
 with st.sidebar:
-    try: st.image("logo-removebg-preview.png")
-    except: st.info("Place logo file in root directory.")
+    st.image("logo-removebg-preview.png")
     st.header("GDP Consultants")
-    st.write("IFRS Automation Suite")
+    st.info("IFRS (LKAS 7) Compliance Tool")
     st.divider()
     st.write("📧 info@taxcalculator.lk")
 
-st.title("IFRS Cash Flow Statement AI")
-st.write("Upload your Balance Sheet and P&L to generate a professional Cash Flow Statement.")
+# File Upload
+col1, col2 = st.columns(2)
+file = col1.file_uploader("Upload Financial Statements (Excel/PDF)", type=['xlsx', 'pdf'])
 
-# Step 1: Upload
-uploaded_file = st.file_uploader("Upload Opening Balance Sheet / Trial Balance (Excel/PDF)", type=['xlsx', 'csv', 'pdf'])
+if file:
+    with st.spinner("Analyzing Financial Data..."):
+        # Process data
+        if file.name.endswith('xlsx'):
+            raw_data = parse_excel(file)
+        else:
+            raw_data = parse_pdf(file)
+            
+        cf_df = prepare_cash_flow(raw_data)
+        
+        # PREVIEW MODE
+        st.subheader("🏁 Cash Flow Preview (Watermarked)")
+        
+        # Blur logic for preview
+        preview_df = cf_df.copy()
+        preview_df.iloc[1:, 1] = "🔒 [PAY TO VIEW]"
+        st.table(preview_df)
 
-if uploaded_file:
-    # 1. Processing Logic (Simulation of AI extraction)
-    # In a real scenario, you would use pandas or a PDF extractor here
-    report_data = {
-        "biz_name": "CORPORATE CLIENT LTD",
-        "period": "Financial Year 2025",
-        "net_profit": 500000.00,
-        "depreciation": 45000.00,
-        "ppe_purchase": 120000.00,
-        "net_increase": 425000.00
-    }
+        # Payment Section
+        st.divider()
+        st.warning("💳 Pay **USD 5.00** to download the full audited PDF and Excel report.")
+        
+        paypal_btn = f"""
+        <div id="paypal-button-container" style="text-align: center;"></div>
+        <script src="https://www.paypal.com/sdk/js?client-id=AaXH1xGEvvmsTOUgFg_vWuMkZrAtD0HLzas87T-Hhzn0esGcceV0J9lGEg-ptQlQU0k89J3jyI8MLzQD&currency=USD"></script>
+        <script>
+            paypal.Buttons({{
+                createOrder: function(data, actions) {{
+                    return actions.order.create({{
+                        purchase_units: [{{ amount: {{ value: '5.00' }} }}]
+                    }});
+                }},
+                onApprove: function(data, actions) {{
+                    return actions.order.capture().then(function(details) {{
+                        window.parent.postMessage({{type: 'payment_success'}}, '*');
+                    }});
+                }}
+            }}).render('#paypal-button-container');
+        </script>
+        """
+        st.components.v1.html(paypal_btn, height=500)
 
-    # Step 2: Preview
-    st.subheader("🏁 Automated IFRS Preview")
-    preview = generate_preview_image(report_data)
-    st.image(preview, use_container_width=True)
-
-    # Step 3: Payment
-    st.divider()
-    st.warning("💳 **Secure Payment Required:** Pay USD 5 to download the full PDF and Excel report.")
-    
-    paypal_html = f"""
-    <div id="paypal-button-container" style="text-align: center;"></div>
-    <script src="https://www.paypal.com/sdk/js?client-id=AaXH1xGEvvmsTOUgFg_vWuMkZrAtD0HLzas87T-Hhzn0esGcceV0J9lGEg-ptQlQU0k89J3jyI8MLzQD&currency=USD"></script>
-    <script>
-        paypal.Buttons({{
-            createOrder: function(data, actions) {{
-                return actions.order.create({{
-                    purchase_units: [{{ amount: {{ value: '5.00' }} }}]
-                }});
-            }},
-            onApprove: function(data, actions) {{
-                return actions.order.capture().then(function(details) {{
-                    window.parent.postMessage({{type: 'payment_success'}}, '*');
-                }});
-            }}
-        }}).render('#paypal-button-container');
-    </script>
-    """
-    components.html(paypal_html, height=500)
+        # Download Buttons (Enabled after payment verification)
+        # Note: In a live app, use session_state to track payment success from the postMessage
+        if st.checkbox("Simulate Payment Success (For Testing)"):
+            pdf_bytes = generate_pdf(cf_df, "Sample Entity", "FY 2025")
+            
+            st.success("✅ Payment Verified!")
+            d_col1, d_col2 = st.columns(2)
+            d_col1.download_button("📥 Download IFRS PDF", pdf_bytes, "Cash_Flow_Statement.pdf", "application/pdf")
+            
+            # Excel Download
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                cf_df.to_excel(writer, index=False, sheet_name='Cash Flow')
+            d_col2.download_button("📥 Download Excel File", output.getvalue(), "Cash_Flow.xlsx")
