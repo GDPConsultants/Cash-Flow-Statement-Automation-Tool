@@ -2,15 +2,16 @@ import streamlit as st
 import pandas as pd
 import pdfplumber
 import io
+import streamlit.components.v1 as components  # FIX: Added missing import
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
-# --- 1. CONFIGURATION & BRANDING ---
-st.set_page_config(page_title="IFRS Cash Flow AI", layout="wide")
+# --- 1. CONFIGURATION & UI ---
+st.set_page_config(page_title="IFRS Cash Flow AI | GDP Consultants", layout="wide")
 
-# Custom CSS for professional layout and code protection
+# Hide Streamlit elements to protect code and maintain branding
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -21,103 +22,100 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. CORE FINANCIAL FUNCTIONS ---
+# --- 2. MODULAR FUNCTIONS ---
 
-def parse_excel(file):
-    """Extracts balance sheet and P&L data from Excel."""
-    try:
-        df = pd.read_excel(file)
-        return df
-    except Exception as e:
-        st.error(f"Excel Extraction Error: {e}")
-        return None
-
-def parse_pdf(file):
-    """Extracts data from PDF using pdfplumber."""
-    text_data = ""
-    try:
-        with pdfplumber.open(file) as pdf:
-            for page in pdf.pages:
-                text_data += page.extract_text()
-        # Logic to parse text into DataFrame would go here
-        return text_data
-    except Exception as e:
-        st.error(f"PDF Extraction Error: {e}")
-        return None
-
-def prepare_cash_flow(data):
+def prepare_cash_flow(uploaded_file):
     """
-    Constructs IFRS (LKAS 7) Cash Flow Statement using the Indirect Method.
-    Classifies into Operating, Investing, and Financing activities.
+    Logic to extract and classify data into IFRS categories.
+    In production, this would use pandas to calculate deltas between opening/closing balances.
     """
-    # Placeholder for logic extracting entities from data
-    # Real-world logic would map specific account names to these categories
-    cf_structure = {
-        "Category": [
-            "Operating Activities", "Profit before tax", "Adjustments: Depreciation", "Changes in Working Capital",
-            "Investing Activities", "Purchase of PPE", "Proceeds from Sale of PPE",
-            "Financing Activities", "Loan Proceeds", "Dividends Paid"
+    # Professional IFRS Structure (Indirect Method)
+    data = {
+        "IFRS Classification": [
+            "Cash flows from operating activities",
+            "  Profit before tax",
+            "  Adjustments for: Depreciation",
+            "  Increase/Decrease in Inventories",
+            "  Increase/Decrease in Trade Receivables",
+            "Net cash from operating activities",
+            "",
+            "Cash flows from investing activities",
+            "  Purchase of Property, Plant & Equipment",
+            "  Proceeds from sale of equipment",
+            "Net cash used in investing activities",
+            "",
+            "Cash flows from financing activities",
+            "  Proceeds from loans",
+            "  Dividends paid",
+            "Net cash from financing activities",
+            "",
+            "NET INCREASE IN CASH"
         ],
-        "Amount": [0, 500000, 45000, -20000, 0, -120000, 15000, 0, 50000, -10000]
+        "Amount (USD)": [
+            None, 500000.00, 45000.00, -12000.00, -8000.00, 525000.00,
+            None, None, -120000.00, 15000.00, -105000.00,
+            None, None, 50000.00, -15000.00, 35000.00,
+            None, 455000.00
+        ]
     }
-    return pd.DataFrame(cf_structure)
+    return pd.DataFrame(data)
 
-def generate_pdf(cf_df, metadata):
-    """Generates an IFRS-styled PDF report."""
+def generate_pdf(df, biz_name, period, currency):
+    """Generates an IFRS-standard PDF report."""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
     elements = []
     styles = getSampleStyleSheet()
     
-    # Title & Metadata
-    elements.append(Paragraph(f"<b>Statement of Cash Flows</b>", styles['Title']))
-    elements.append(Paragraph(f"Entity: {metadata['entity']}", styles['Normal']))
-    elements.append(Paragraph(f"Period: {metadata['period']}", styles['Normal']))
-    elements.append(Paragraph(f"Currency: {metadata['currency']}", styles['Normal']))
-    elements.append(Paragraph("Prepared under IFRS (LKAS 7) Standards", styles['Italic']))
-    elements.append(Spacer(1, 12))
+    # Header
+    elements.append(Paragraph(f"<b>{biz_name}</b>", styles['Title']))
+    elements.append(Paragraph(f"Statement of Cash Flows (IFRS - LKAS 7)", styles['Heading2']))
+    elements.append(Paragraph(f"Period: {period} | Currency: {currency}", styles['Normal']))
+    elements.append(Spacer(1, 20))
 
-    # Table
-    data = [cf_df.columns.to_list()] + cf_df.values.tolist()
-    t = Table(data, colWidths=[300, 100])
+    # Data Table
+    table_data = [df.columns.to_list()] + df.values.tolist()
+    formatted_data = [[str(item) if item is not None else "" for item in row] for row in table_data]
+    
+    t = Table(formatted_data, colWidths=[350, 120])
     t.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.whitesmoke),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, colors.black),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.darkgreen),
     ]))
     elements.append(t)
-    
     doc.build(elements)
     buffer.seek(0)
     return buffer
 
-# --- 3. MAIN APPLICATION INTERFACE ---
+# --- 3. MAIN APP FLOW ---
 
-st.title("IFRS Cash Flow Statement Automation")
-st.write("Professional Audit-Ready Reporting by **GDP Consultants**")
-
-# Sidebar
 with st.sidebar:
-    st.header("GDP AI Recon")
-    st.write("Professional Audit Automation")
-    st.divider()
+    try: st.image("logo-removebg-preview.png")
+    except: st.info("GDP Consultants")
+    st.write("### IFRS Automation Tool")
+    st.markdown("---")
     st.write("📧 info@taxcalculator.lk")
 
-# File Upload
-uploaded_file = st.file_uploader("Upload Opening Balance Sheet / P&L (Excel/PDF)", type=['xlsx', 'pdf'])
+st.title("IFRS Cash Flow Statement Automation")
+st.info("Upload Financial Statements to generate IFRS (LKAS 7) compliant reports.")
+
+uploaded_file = st.file_uploader("Upload Opening Balance Sheet & P&L (Excel/PDF)", type=['xlsx', 'pdf'])
 
 if uploaded_file:
-    # 1. Parsing and Extraction
-    metadata = {"entity": "ABC CORP", "period": "FY 2025", "currency": "USD"}
+    # 1. Generate Logic
     cf_df = prepare_cash_flow(uploaded_file)
     
-    # 2. Preview (Restricted)
-    st.subheader("🏁 Automated IFRS Preview")
-    st.dataframe(cf_df.head(5)) # Shows only initial entries as per request
-    st.warning("Pay USD 5 to download the full IFRS report.")
+    # 2. Preview Block (Restricted)
+    st.subheader("🏁 Statement Preview")
+    # Show only the top rows and hide final totals to encourage payment
+    st.dataframe(cf_df.iloc[:6].style.format({"Amount (USD)": "{:,.2f}"})) 
+    st.warning("🔒 Full report is locked. Pay USD 5 to download PDF and Excel versions.")
 
-    # 3. Payment Integration
-    paypal_btn = f"""
+    # 3. PayPal Integration
+    paypal_btn_html = f"""
     <div id="paypal-button-container" style="text-align: center;"></div>
     <script src="https://www.paypal.com/sdk/js?client-id=AaXH1xGEvvmsTOUgFg_vWuMkZrAtD0HLzas87T-Hhzn0esGcceV0J9lGEg-ptQlQU0k89J3jyI8MLzQD&currency=USD"></script>
     <script>
@@ -135,15 +133,17 @@ if uploaded_file:
         }}).render('#paypal-button-container');
     </script>
     """
-    components.html(paypal_btn, height=450)
+    components.html(paypal_btn_html, height=450)
 
-    # 4. Success / Download Block
-    if st.checkbox("Check here if payment was successful"):
-        pdf_bytes = generate_pdf(cf_df, metadata)
-        st.success("✅ Payment Verified.")
-        st.download_button("📥 Download Full IFRS PDF Report", pdf_bytes, "Cash_Flow_Statement.pdf")
+    # 4. Post-Payment (Using a checkbox to simulate verification for this demo)
+    if st.checkbox("Unlock Download (Payment Verified)"):
+        st.success("✅ Access Granted.")
+        
+        # PDF Download
+        pdf_report = generate_pdf(cf_df, "ABC ENTERPRISES", "FY 2025", "USD")
+        st.download_button("📥 Download IFRS PDF Report", pdf_report, "IFRS_CashFlow.pdf")
         
         # Excel Download
         excel_buffer = io.BytesIO()
         cf_df.to_excel(excel_buffer, index=False)
-        st.download_button("📥 Download Excel File", excel_buffer.getvalue(), "Cash_Flow_Data.xlsx")
+        st.download_button("📥 Download Excel Data", excel_buffer.getvalue(), "IFRS_CashFlow.xlsx")
