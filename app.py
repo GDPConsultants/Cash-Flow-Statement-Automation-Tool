@@ -5,140 +5,116 @@ from PIL import Image, ImageDraw, ImageFont
 import streamlit.components.v1 as components
 import io
 
-# --- 1. SETTINGS & BRANDING ---
-st.set_page_config(page_title="Bank Reconciliation AI", layout="wide")
+# --- 1. CONFIGURATION & BRANDING ---
+st.set_page_config(page_title="IFRS Cash Flow AI", layout="wide", page_icon="📈")
 
-# Hide Streamlit UI to protect code
+# Security: Hide developer menus to protect code
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     .stDeployButton {display:none;}
-    .main {background-color: #F4F7F6;}
+    .main {background-color: #f8fafc;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. CPA-BASED RECONCILIATION LOGIC ---
-def calculate_fee(entries):
-    if entries <= 100: return 5.0
-    return 5.0 + ((entries - 1) // 100) * 1.0
-
-def generate_template_preview(data):
-    """Generates an image preview following the green [Company Name] template"""
-    img = Image.new('RGB', (1000, 1500), color=(255, 255, 255))
+# --- 2. IFRS CASH FLOW LOGIC ---
+def generate_preview_image(data):
+    """Generates a professional IFRS formatted image preview with watermark"""
+    img = Image.new('RGB', (1000, 1400), color=(255, 255, 255))
     d = ImageDraw.Draw(img)
     
-    # Header - Dark Green Bar (matching template)
-    d.rectangle([0, 0, 1000, 120], fill="#4B8B5B")
-    d.text((50, 40), f"{data['biz_name']} Bank Reconciliation Statement", fill="white")
+    # Header - Corporate Blue
+    d.rectangle([0, 0, 1000, 120], fill="#1E3A8A")
+    d.text((50, 40), f"{data['biz_name']} - Statement of Cash Flows (IFRS)", fill="white")
     
     y = 150
-    d.text((50, y), f"Month Ended: {data['period']}", fill="black")
-    d.text((700, y), f"Date Prepared: {data['prep_date']}", fill="black")
+    d.text((50, y), f"Period Ended: {data['period']}", fill="black")
     
-    # Section Header - Cash Balance Per Books
+    # Section: Operating Activities
     y += 80
-    d.rectangle([0, y, 1000, y+40], fill="#D9EAD3")
-    d.text((50, y+10), "Cash Balance Per Books", fill="black")
-    y += 45
-    d.text((50, y), f"Cash Balance per Books (as of {data['prev_month_end']})", fill="black")
-    d.text((850, y), f"${data['raw_book_bal']:,.2f}", fill="black")
-    
-    # Additions to Books
-    y += 50
-    d.rectangle([0, y, 1000, y+40], fill="#F3F3F3")
-    d.text((50, y+10), "Additions to Cash Balance Per Books:", fill="black")
-    for item in data['book_additions']:
-        y += 45
-        d.text((70, y), item['desc'], fill="gray")
-        d.text((850, y), f"${item['amt']:,.2f}", fill="black")
-    
-    # Deductions from Books
+    d.rectangle([0, y, 1000, y+40], fill="#E5E7EB")
+    d.text((50, y+10), "Cash Flows from Operating Activities (Indirect Method)", fill="black")
     y += 60
-    d.rectangle([0, y, 1000, y+40], fill="#F3F3F3")
-    d.text((50, y+10), "Deductions from Cash Balance Per Books:", fill="black")
-    for item in data['book_deductions']:
-        y += 45
-        d.text((70, y), item['desc'], fill="gray")
-        d.text((850, y), f"${item['amt']:,.2f}", fill="black")
-        
+    d.text((70, y), "Net Profit Before Tax", fill="black"); d.text((850, y), f"{data['net_profit']:,.2f}", fill="black")
+    y += 40
+    d.text((70, y), "Adjustments for: Depreciation & Amortization", fill="gray"); d.text((850, y), f"{data['depreciation']:,.2f}", fill="black")
+    
+    # Section: Investing Activities
+    y += 100
+    d.rectangle([0, y, 1000, y+40], fill="#E5E7EB")
+    d.text((50, y+10), "Cash Flows from Investing Activities", fill="black")
     y += 60
-    d.rectangle([0, y, 1000, y+40], fill="#B6D7A8")
-    d.text((50, y+10), "Adjusted Cash Balance Per Books", fill="black")
-    d.text((850, y+10), f"${data['adj_book_bal']:,.2f}", fill="black")
-
-    # Final Status Bar
-    y = 1400
-    d.rectangle([0, y, 1000, y+60], fill="#6AA84F")
-    d.text((50, y+20), "Reconciliation Status", fill="black")
-    d.text((850, y+20), "RECONCILED", fill="black")
+    d.text((70, y), "Purchase of Property, Plant & Equipment", fill="gray"); d.text((850, y), f"({data['ppe_purchase']:,.2f})", fill="black")
+    
+    # Section: Financing Activities
+    y += 100
+    d.rectangle([0, y, 1000, y+40], fill="#E5E7EB")
+    d.text((50, y+10), "Cash Flows from Financing Activities", fill="black")
+    
+    # Total Cash Movement
+    y += 150
+    d.rectangle([0, y, 1000, y+50], fill="#1E3A8A")
+    d.text((50, y+15), "Net Increase/Decrease in Cash", fill="white")
+    d.text((850, y+15), f"{data['net_increase']:,.2f}", fill="white")
 
     # Watermark
-    d.text((300, 750), "PREVIEW ONLY - PAY TO UNLOCK", fill=(200, 200, 200))
+    d.text((250, 700), "PREVIEW ONLY - PAY USD 5 TO DOWNLOAD", fill=(200, 200, 200))
     return img
 
 # --- 3. UI WORKFLOW ---
 with st.sidebar:
-    st.image("logo-removebg-preview.png")
-    st.header("🏢 GDP AI Recon")
-    st.write("**Methodology:** CPA Step-by-Step ")
+    try: st.image("logo-removebg-preview.png")
+    except: st.info("Place logo file in root directory.")
+    st.header("GDP Consultants")
+    st.write("IFRS Automation Suite")
     st.divider()
     st.write("📧 info@taxcalculator.lk")
 
-st.title("Bank Reconciliation AI")
-st.write("Professional automated auditing in your corporate format.")
+st.title("IFRS Cash Flow Statement AI")
+st.write("Upload your Balance Sheet and P&L to generate a professional Cash Flow Statement.")
 
-c1, c2, c3 = st.columns(3)
-prev_rec = c1.file_uploader("Previous Month Reconciliation", type=['xlsx', 'csv'])
-c_stmt = c2.file_uploader("Current Bank Statement", type=['xlsx', 'csv'])
-c_book = c3.file_uploader("Current Bank Book", type=['xlsx', 'csv'])
+# Step 1: Upload
+uploaded_file = st.file_uploader("Upload Opening Balance Sheet / Trial Balance (Excel/PDF)", type=['xlsx', 'csv', 'pdf'])
 
-if c_stmt and c_book:
-    # 1. Processing and Entry Counting
-    book_df = pd.read_excel(c_book) if c_book.name.endswith('xlsx') else pd.read_csv(c_book)
-    fee = calculate_fee(len(book_df))
-    
-    # 2. Financial Modeling based on CPA Step 3 & 4 [cite: 63, 73]
-    # This sample data reflects your green template's structure
+if uploaded_file:
+    # 1. Processing Logic (Simulation of AI extraction)
+    # In a real scenario, you would use pandas or a PDF extractor here
     report_data = {
-        "biz_name": "ABC CORP", "period": "July, 2025", "prep_date": "July 1, 2025",
-        "prev_month_end": "June 30, 2025", "raw_book_bal": 12500.00, "adj_book_bal": 12565.00,
-        "book_additions": [
-            {"desc": "Interest Earned", "amt": 15.00},
-            {"desc": "Notes Receivable Collected by Bank", "amt": 500.00}
-        ],
-        "book_deductions": [
-            {"desc": "Bank Service Charges", "amt": 25.00},
-            {"desc": "NSF Checks", "amt": 150.00}
-        ]
+        "biz_name": "CORPORATE CLIENT LTD",
+        "period": "Financial Year 2025",
+        "net_profit": 500000.00,
+        "depreciation": 45000.00,
+        "ppe_purchase": 120000.00,
+        "net_increase": 425000.00
     }
 
-    # 3. Preview Generation
-    st.subheader("🏁 Automated BRS Preview (Template Match)")
-    preview = generate_template_preview(report_data)
+    # Step 2: Preview
+    st.subheader("🏁 Automated IFRS Preview")
+    preview = generate_preview_image(report_data)
     st.image(preview, use_container_width=True)
 
-    # 4. Monetization Section
+    # Step 3: Payment
     st.divider()
-    st.warning(f"💳 Total Transactions: {len(book_df)} | **Service Fee: USD {fee:.2f}**")
+    st.warning("💳 **Secure Payment Required:** Pay USD 5 to download the full PDF and Excel report.")
     
     paypal_html = f"""
-    <div id="paypal-button-container"></div>
+    <div id="paypal-button-container" style="text-align: center;"></div>
     <script src="https://www.paypal.com/sdk/js?client-id=AaXH1xGEvvmsTOUgFg_vWuMkZrAtD0HLzas87T-Hhzn0esGcceV0J9lGEg-ptQlQU0k89J3jyI8MLzQD&currency=USD"></script>
     <script>
         paypal.Buttons({{
             createOrder: function(data, actions) {{
                 return actions.order.create({{
-                    purchase_units: [{{ amount: {{ value: '{fee:.2f}' }} }}]
+                    purchase_units: [{{ amount: {{ value: '5.00' }} }}]
                 }});
             }},
             onApprove: function(data, actions) {{
                 return actions.order.capture().then(function(details) {{
-                    alert('Payment successful for ' + details.payer.name.given_name);
+                    window.parent.postMessage({{type: 'payment_success'}}, '*');
                 }});
             }}
         }}).render('#paypal-button-container');
     </script>
     """
-    components.html(paypal_html, height=450)
+    components.html(paypal_html, height=500)
